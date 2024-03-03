@@ -35,32 +35,57 @@ def index():
         if not name:
             return render_template('index.html', error='A name is required', code=code, name=name)
 
-        if join != False and not code:
-            return render_template('index.html', error='A code is required', code=code, name=name)
+        session["name"] = name
 
-        room = code
         if create != False:
             room = genereate_unique_code(4)
             rooms[room] = {
-                'members': 0,
+                'creator_name': name,
+                'member_names': [name],
+                'members': 1,
                 'messages': []
             }
-        elif code not in rooms:
-            return render_template('index.html', error='Room does not exist', code=code, name=name)
+            session["room"] = room
+            session["is_creator"] = True
+            return redirect(url_for("room"))
+        
+        if join != False and code in rooms:
+            room = rooms[code]
+            session["room"] = code
 
-        session["room"] = room
-        session["name"] = name
-        return redirect(url_for("room"))
+            if name in room['member_names']:
+                return render_template('index.html', error='Name is already taken', code=code, name=name)
+
+            room['member_names'].append(name)
+            room['members'] += 1
+            session["is_creator"] = False
+            return redirect(url_for("room"))
+        
+        if join != False and code not in rooms:
+            return render_template('index.html', error='Room does not exist', code=code, name=name)
 
     return render_template('index.html')
 
 @app.route('/room')
 def room():
-    room = session.get('room')
-    if room is None or session.get('name') is None or room not in rooms:
+    room_code = session.get('room')
+    name = session.get('name')
+    is_creator = session.get('is_creator')
+
+    if room_code is None or name is None or room_code not in rooms:
         return redirect(url_for('index'))
 
-    return render_template('room.html', code=room, messages=rooms[room]['messages'])
+    if is_creator:
+        name = rooms[room_code]['creator_name']
+
+    room_data = rooms[room_code]
+    return render_template('room.html', code=room_code, messages=room_data['messages'], name=name)
+
+
+
+@app.route('/leaveroom')
+def leaveroom():
+    return redirect(url_for('index'))
 
 
 @SocketIO.on('message')
@@ -82,8 +107,11 @@ def message(data):
 
 @SocketIO.on("connect")
 def connect(auth):
+    
     room = session.get('room')
     name = session.get('name')
+    
+
     if room is None or name is None:
         raise ConnectionRefusedError("Not authorized")
         return
@@ -91,7 +119,7 @@ def connect(auth):
         raise ConnectionRefusedError("Room does not exist")
         leave_room(room)
         return
-    
+
     join_room(room)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     send({
@@ -122,8 +150,7 @@ def disconnect():
     print(f"{name} has left the room {room}")
 
 if __name__ == '__main__':
-
-    host = "192.168.1.103"
+    host = "0.0.0.0"
     SocketIO.run(app, host=host, port=5000, debug=True)
 
 
