@@ -42,7 +42,7 @@ def index():
             rooms[room] = {
                 'creator_name': name,
                 'member_names': [name],
-                'members': 1,
+                'members': 0,
                 'messages': []
             }
             session["room"] = room
@@ -57,7 +57,6 @@ def index():
                 return render_template('index.html', error='Name is already taken', code=code, name=name)
 
             room['member_names'].append(name)
-            room['members'] += 1
             session["is_creator"] = False
             return redirect(url_for("room"))
         
@@ -129,6 +128,7 @@ def connect(auth):
     }, to=room)
     rooms[room]['members'] += 1
     print(f"{name} has joined the room {room}")
+    print(f"ACTIVE CONNECTIONS for {room}: {rooms[room]['members']}")
 
 @SocketIO.on("disconnect")
 def disconnect():
@@ -139,7 +139,10 @@ def disconnect():
 
     if room in rooms:
         rooms[room]['members'] -= 1
+        print(f"{name} has left the room {room}")
+        print(f"ACTIVE CONNECTIONS for {room}: {rooms[room]['members']}")
         if rooms[room]['members'] == 0:
+            print(f"Room is empty. Deleting room {room}...")
             del rooms[room]
     
     send({
@@ -147,7 +150,6 @@ def disconnect():
         "message": "has left the room",
         "timestamp": timestamp
     }, to=room)
-    print(f"{name} has left the room {room}")
 
 if __name__ == '__main__':
     host = "0.0.0.0"
