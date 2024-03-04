@@ -26,6 +26,25 @@ def genereate_unique_code(length):
 
     return code
 
+# Handler errors
+
+# Handles all other errors
+@socketio.on_error_default  
+def default_error_handler(e):
+    print("An error occurred:", e)
+
+@app.errorhandler(ConnectionRefusedError)
+def handle_connection_refused_error(e):
+    return jsonify({'error': str(e)}), 403
+
+@app.errorhandler(404)
+def handle_not_found_error(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def handle_internal_server_error(e):
+    return render_template('500.html'), 500
+
 # Home Index Route
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -144,7 +163,7 @@ def connect(auth):
 
     join_room(room)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+
     # Send message indicating user has joined the room in client side
     send({
         "name": name,
