@@ -6,12 +6,12 @@ This project is heavily inspired by YouTube channel `(Tech with Tim)` https://ww
 ## Installation Required:
 1. Flask
 ```
-- pip install -U Flask
+pip install -U Flask
 ```
 
 2. Flask-Socketio
 ```
-- pip install flask-socketio
+pip install flask-socketio
 ```
 
 3. After that, run `python main.py` to run your web server application.
