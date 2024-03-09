@@ -1,5 +1,4 @@
-{% extends "layout.html" %}
-{% block content %}
+{% extends "layout.html" %} {% block content %}
 
 <div class="room-container">
   <form action="{{ url_for('leaveroom') }}">
@@ -7,13 +6,13 @@
       <button type="submit" class="btn btn-secondary">Leave Room</button>
     </div>
   </form>
-  
+
   <div class="message-box">
     <div class="enter-text my-4">
       <h2 class="chatroom-text">Chat Room: {{code}}</h2>
     </div>
-    <div class="messages" id="messages">
-    </div>
+    <div class="messages" id="messages"></div>
+    <div class="space" id="typingIndicator"></div>
     <div class="message-inputs d-flex">
       <input
         type="text"
@@ -33,11 +32,61 @@
         Send
       </button>
     </div>
-  </div>  
+  </div>
 </div>
 
 <script type="text/javascript">
   var socketio = io();
+  var typing = false;
+  var lastTypingTime;
+  var typingTimeout;
+
+  function emitTyping() {
+    if (!typing) {
+      typing = true;
+      socketio.emit("typing");
+    }
+    lastTypingTime = new Date().getTime();
+
+    clearTimeout(typingTimeout); // Clear the previous timeout
+    typingTimeout = setTimeout(function () {
+      var typingTimer = new Date().getTime();
+      var timeDiff = typingTimer - lastTypingTime;
+      if (timeDiff >= 1000 && typing) {
+        socketio.emit("stop typing");
+        typing = false;
+      }
+    }, 1000);
+  }
+
+  var input = document.getElementById("message");
+  input.addEventListener("input", function () {
+    emitTyping();
+  });
+
+  var sendButton = document.getElementById("send-btn");
+  sendButton.addEventListener("click", function () {
+    emitTyping();
+  });
+
+  input.addEventListener("keypress", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      typing = false;
+      sendMessage();
+    }
+  });
+
+  socketio.on("typing", function (data) {
+    if (data.name !== "{{ session.get('name') }}") {
+      document.getElementById("typingIndicator").innerHTML =
+        "<i>" + data.name + " is typing...</i>";
+    }
+  });
+
+  socketio.on("stop typing", function (data) {
+    document.getElementById("typingIndicator").innerHTML = "";
+  });
 
   const createMessage = (name, msg, timestamp) => {
     const content = `
@@ -70,21 +119,6 @@
 
 {% for msg in messages %}
 <script type="text/javascript">
-  createMessage(
-    "{{ msg.name }}",
-    "{{ msg.message }}",
-    "{{ msg.timestamp }}"
-  );
+  createMessage("{{ msg.name }}", "{{ msg.message }}", "{{ msg.timestamp }}");
 </script>
-{% endfor %}
-
-<script>
-  var input = document.getElementById("message");
-  input.addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      sendMessage();
-    }
-  })
-</script>
-{% endblock %}
+{% endfor %} {% endblock %}
