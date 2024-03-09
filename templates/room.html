@@ -11,6 +11,11 @@
     <div class="enter-text my-4">
       <h2 class="chatroom-text">Chat Room: {{code}}</h2>
     </div>
+    <div class="user-name">
+      <div class="name-container">
+        <span class="user-background" id="user"></span>
+      </div>
+    </div>
     <div class="messages" id="messages"></div>
     <div class="space" id="typingIndicator"></div>
     <div class="message-inputs d-flex">
@@ -59,6 +64,9 @@
     }, 1000);
   }
 
+  var user = document.getElementById("user");
+  user.innerHTML = "{{ session.get('name') }}";
+
   var input = document.getElementById("message");
   input.addEventListener("input", function () {
     emitTyping();
@@ -66,7 +74,7 @@
 
   var sendButton = document.getElementById("send-btn");
   sendButton.addEventListener("click", function () {
-    emitTyping();
+    socketio.emit("stop typing");
   });
 
   input.addEventListener("keypress", function (event) {
@@ -74,6 +82,8 @@
       event.preventDefault();
       typing = false;
       sendMessage();
+      clearTimeout(typingTimeout);
+      socketio.emit("stop typing");
     }
   });
 

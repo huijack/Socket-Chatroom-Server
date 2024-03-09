@@ -210,8 +210,11 @@ def disconnect():
     # Get the current timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # If the room exists, update member count and print user leaving info
+    # If the room exists, update member count and remove the user's name from the list of member names
     if room in rooms:
+        # Remove the user's name from the list of member names
+        rooms[room]['member_names'].remove(name)
+
         # Subtract the number of users in the room
         rooms[room]['members'] -= 1
 
