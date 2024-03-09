@@ -116,6 +116,12 @@
   gap: 10px;
 }
 
+.space {
+  padding: 0 10px;
+  font-size: 14px;
+  color: #666666;
+}
+
 @media screen and (max-width: 768px){
   .message-box {
     width: 90vw;

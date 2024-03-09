@@ -29,7 +29,7 @@ def genereate_unique_code(length):
 # Handler errors
 
 # Handles all other errors
-@socketio.on_error_default  
+@SocketIO.on_error_default  
 def default_error_handler(e):
     print("An error occurred:", e)
 
@@ -116,6 +116,22 @@ def room():
 @app.route('/leaveroom')
 def leaveroom():
     return redirect(url_for('index'))
+
+
+# Handle "typing" event
+@SocketIO.on('typing')
+def typing():
+    room = session.get('room')
+    name = session.get('name')
+    if room in rooms:
+        SocketIO.emit('typing', {'name': name}, room=room)
+
+# Handle "stop typing" event
+@SocketIO.on('stop typing')
+def stop_typing():
+    room = session.get('room')
+    if room in rooms:
+        SocketIO.emit('stop typing', room=room)
 
 # SocketIO Routes
 
