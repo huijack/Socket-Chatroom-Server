@@ -45,6 +45,7 @@
   var typing = false;
   var lastTypingTime;
   var typingTimeout;
+  const typingUsers = {};
 
   function emitTyping() {
     if (!typing) {
