@@ -3,6 +3,9 @@ from flask_socketio import SocketIO, join_room, leave_room, send, ConnectionRefu
 from datetime import datetime
 import socket
 import random
+import logging
+from logging.handlers import RotatingFileHandler
+from werkzeug.exceptions import BadRequest
 from string import ascii_uppercase
 
 app = Flask(__name__)
@@ -10,6 +13,14 @@ app.config['SECRET_KEY'] = '12124545'
 SocketIO = SocketIO(app)
 
 rooms = {}
+
+# Configure logging
+log_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+file_handler = RotatingFileHandler('flask_app.log', maxBytes=10000, backupCount=5)
+file_handler.setFormatter(log_formatter)
+
+app.logger.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
 
 # Generate random 4 letters
 def genereate_unique_code(length):
@@ -45,6 +56,13 @@ def handle_not_found_error(e):
 def handle_internal_server_error(e):
     return render_template('500.html'), 500
 
+@app.errorhandler(BadRequest)
+def handle_bad_request(e):
+    # Log the malformed request data
+    app.logger.warning(f"Malformed request data: {request.data}")
+    app.logger.warning(f"Bad request received: {e}")
+    return 'Bad Request', 400
+
 # Home Index Route
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -72,7 +90,8 @@ def index():
             rooms[room] = {
                 'member_names': [name],
                 'members': 0,
-                'messages': []
+                'messages': [],
+                'typing_users': [],
             }
 
             # Store the room code in the session
@@ -239,7 +258,7 @@ if __name__ == '__main__':
 
     # Run on all available addresses
     host = "0.0.0.0"
-    SocketIO.run(app, host=host, port=5000, debug=True)
+    SocketIO.run(app, host=host, port=5050, debug=True)
 
 
 
